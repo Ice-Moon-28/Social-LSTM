@@ -2,10 +2,10 @@
 # CONSTANTS YOU NEED TO MODIFY
 
 #whether to train on GPU
-CUDA=True 
+CUDA=False
 # root directory that contains the training/testing data
-DATA_HOME="/dfs/scratch0/reddit/conflict/prediction"
-LOG_DIR="/dfs/scratch0/reddit/conflict/prediction"
+DATA_HOME="./data"
+LOG_DIR="./logs"
 #whether to show results on the test set
 PRINT_TEST=False
 

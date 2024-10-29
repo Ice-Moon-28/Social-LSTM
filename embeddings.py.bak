@@ -1,5 +1,5 @@
 import heapq
-
+from itertools import izip
 import numpy as np
 
 ## EMBEDDING HELPER CLASSES/FUNCTIONS
@@ -16,7 +16,7 @@ class Embeddings:
    def __init__(self, vecsfile, vocabfile=None, normalize=True):
       if vocabfile is None: vocabfile = vecsfile.replace("npy","vocab")
       self._vecs = np.load(vecsfile)
-      self._vocab = open(vocabfile).read().split()
+      self._vocab = file(vocabfile).read().split()
       if normalize:
          self._vecs = ugly_normalize(self._vecs)
       self._w2v = {w:i for i,w in enumerate(self._vocab)}
@@ -30,13 +30,13 @@ class Embeddings:
 
    def similar_to_vec(self, v, N=10):
       sims = self._vecs.dot(v)
-      sims = heapq.nlargest(N, list(zip(sims,self._vocab,self._vecs)))
+      sims = heapq.nlargest(N, zip(sims,self._vocab,self._vecs))
       return sims
 
    def most_similar(self, word, N=10):
       w = self._vocab.index(word)
       sims = self._vecs.dot(self._vecs[w])
-      sims = heapq.nlargest(N, list(zip(sims,self._vocab)))
+      sims = heapq.nlargest(N, zip(sims,self._vocab))
       return sims
 
    def analogy(self, pos1, neg1, pos2,N=10,mult=True):
@@ -47,10 +47,10 @@ class Embeddings:
       if mult:
          p1,p2,n1 = [(1+wvecs.dot(wvecs[i]))/2 for i in (p1,p2,n1)]
          if N == 1:
-            return max(((v,w) for v,w in zip((p1 * p2 / n1),vocab) if w not in [pos1,pos2,neg1]))
-         return heapq.nlargest(N,((v,w) for v,w in zip((p1 * p2 / n1),vocab) if w not in [pos1,pos2,neg1]))
+            return max(((v,w) for v,w in izip((p1 * p2 / n1),vocab) if w not in [pos1,pos2,neg1]))
+         return heapq.nlargest(N,((v,w) for v,w in izip((p1 * p2 / n1),vocab) if w not in [pos1,pos2,neg1]))
       else:
          p1,p2,n1 = [(wvecs.dot(wvecs[i])) for i in (p1,p2,n1)]
          if N == 1:
-            return max(((v,w) for v,w in zip((p1 + p2 - n1),vocab) if w not in [pos1,pos2,neg1]))
-         return heapq.nlargest(N,((v,w) for v,w in zip((p1 + p2 - n1),vocab) if w not in [pos1,pos2,neg1]))
+            return max(((v,w) for v,w in izip((p1 + p2 - n1),vocab) if w not in [pos1,pos2,neg1]))
+         return heapq.nlargest(N,((v,w) for v,w in izip((p1 + p2 - n1),vocab) if w not in [pos1,pos2,neg1]))

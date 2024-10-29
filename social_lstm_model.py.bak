@@ -1,11 +1,11 @@
 import torch
 import random
 import argparse
-import pickle as pickle
+import cPickle as pickle
 import torch.nn as nn
 import numpy as np
 
-
+from itertools import ifilter
 from torch.autograd import Variable
 from sklearn.metrics import roc_auc_score
 
@@ -19,20 +19,20 @@ class SocialLSTM(nn.Module):
     """
 
     def _load_glove_embeddings(self):
-        print("Loading word embeddings...")
+        print "Loading word embeddings..."
         with open(constants.WORD_EMBEDS) as fp:
             embeddings = np.empty((constants.VOCAB_SIZE, constants.WORD_EMBED_DIM), dtype=np.float32)
             for i, line in enumerate(fp):
-                embeddings[i,:] = list(map(float, line.split()[1:]))
+                embeddings[i,:] = map(float, line.split()[1:])
         return embeddings
 
     def _load_user_embeddings(self):
-        print("Loading user embeddings...")
+        print "Loading user embeddings..."
         embeds = Embeddings(constants.USER_EMBEDS)
         return embeds._vecs
 
     def _load_subreddit_embeddings(self):
-        print("Loading subreddit embeddings...")
+        print "Loading subreddit embeddings..."
         embeds = Embeddings(constants.SUBREDDIT_EMBEDS)
         return embeds._vecs
 
@@ -110,13 +110,12 @@ class SocialLSTM(nn.Module):
         else:
             inputs = text_inputs
             lengths = [l-3 for l in lengths]
-
         inputs  = nn.utils.rnn.pack_padded_sequence(inputs, lengths)
         outputs, h = self.rnn(inputs, self.init_hidden)
 
         h, lengths = nn.utils.rnn.pad_packed_sequence(outputs)
         h = h.sum(dim=0).squeeze()
-        lengths = torch.tensor(lengths, dtype=torch.float)
+        lengths = torch.FloatTensor(lengths)
         if constants.CUDA:
             lengths = lengths.cuda()
         h = h.t().div(Variable(lengths))
@@ -136,7 +135,7 @@ class SocialLSTM(nn.Module):
         return weights
 
 def load_data(batch_size, max_len):
-    print("Loading train/test data...")
+    print "Loading train/test data..."
     thread_to_sub = {}
     with open(constants.POST_INFO) as fp:
         for line in fp:
@@ -176,12 +175,12 @@ def load_data(batch_size, max_len):
                 title_words = title_words[:min(len(title_words), constants.MAX_LEN)]
                 if len(title_words) == 0 or title_words[0] == '':
                     continue
-                words.append(list(map(int, title_words)))
+                words.append(map(int, title_words))
 
                 body_words = info[-1].split(":")[1].strip().split(",")
                 body_words = body_words[:min(len(body_words), constants.MAX_LEN-len(title_words))]
                 if not (len(body_words) == 0 or body_words[0] == ''):
-                    words[-1].extend(list(map(int, body_words)))
+                    words[-1].extend(map(int, body_words))
 
                 words[-1] = [constants.VOCAB_SIZE+1 if w==-1 else w for w in words[-1]]
 
@@ -265,28 +264,28 @@ def train(model, train_data, val_data, test_data, optimizer,
             optimizer.step()
 
             if ema_loss is None:
-                ema_loss = loss.item()
+                ema_loss = loss.data[0]
             else:
-                ema_loss = 0.01*loss.data.item() + 0.99*ema_loss
+                ema_loss = 0.01*loss.data[0] + 0.99*ema_loss
 
             if i % 10 == 0:
-                print(epoch, i, ema_loss)
-                print(epoch, i, ema_loss, file=log_file)
+                print epoch, i, ema_loss
+                print >>log_file, epoch, i, ema_loss
             if  i % log_every == 0:
                 auc = evaluate_auc(model, val_data)
-                print("Val AUC", epoch, i, auc)
+                print "Val AUC", epoch, i, auc
                 if not log_file is None:
-                    print("Val AUC", epoch, i, auc, file=log_file)
+                    print >>log_file, "Val AUC", epoch, i, auc
                 if auc > best_iter[0]:
                     best_iter = (auc, epoch, i)
-                    print("New best val!", best_iter)
+                    print "New best val!", best_iter
                     best_test = evaluate_auc(model, test_data)
                     if auc > 0.7:
                         ids, embeds = get_embeddings(train_data+val_data+test_data)
-    print("Overall best val:", best_iter)
+    print "Overall best val:", best_iter
     if not log_file is None:
-        print("Overall best test:", best_test, file=log_file)
-        print("Overall best val:", best_iter, file=log_file)
+        print >>log_file, "Overall best test:", best_test
+        print >>log_file, "Overall best val:", best_iter
         if not embeds is None and save_embeds:
             np.save(open(lg_str+"-embeds.npy", "w"), embeds)
             pickle.dump(ids, open(lg_str+"-ids.pkl", "w"))
@@ -348,16 +347,16 @@ if __name__ == "__main__":
         prepend_social = True
 
 
-    print("Loading training data")
+    print "Loading training data"
     # WE HAVE PRE-CONSTRUCTED TRAIN/VAL/TEST DATA USING load_data
     # this avoids re-doing all the pre-processing everytime the code is
     # run. This data is fixed to a batch size of 512.
-    train_data = pickle.load(open(constants.TRAIN_DATA, 'rb'))
-    val_data = pickle.load(open(constants.VAL_DATA, 'rb'))
-    test_data = pickle.load(open(constants.TEST_DATA, 'rb'))
+    train_data = pickle.load(open(constants.TRAIN_DATA))
+    val_data = pickle.load(open(constants.VAL_DATA))
+    test_data = pickle.load(open(constants.TEST_DATA))
 
-    print(len(train_data)*constants.BATCH_SIZE, "training examples", len(val_data)*512, "validation examples")
-    print(sum([i for batch in train_data for i in batch[-1]]), "positive training", sum([i for batch in val_data for i in batch[-1]]), "positive validation")
+    print len(train_data)*constants.BATCH_SIZE, "training examples", len(val_data)*512, "validation examples"
+    print sum([i for batch in train_data for i in batch[-1]]), "positive training", sum([i for batch in val_data for i in batch[-1]]), "positive validation"
 
     # annoying checks for CUDA switches....
     if constants.CUDA:
@@ -399,5 +398,5 @@ if __name__ == "__main__":
             include_meta=args.include_meta, final_dense=args.final_dense)
     if constants.CUDA:
         model.cuda()
-    optimizer = torch.optim.Adam(filter(lambda p : p.requires_grad, model.parameters()), lr=args.learning_rate)
+    optimizer = torch.optim.Adam(ifilter(lambda p : p.requires_grad, model.parameters()), lr=args.learning_rate)
     auc = train(model, train_data, val_data, test_data, optimizer, epochs=10, log_file=args.log_file, save_embeds=args.save_embeds)
