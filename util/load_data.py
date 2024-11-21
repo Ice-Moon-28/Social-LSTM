@@ -50,7 +50,9 @@ def load_data(batch_size, max_len):
     with open(constants.PREPROCESSED_DATA) as fp:
         words, users, subreddits, lengths, labels, ids = [], [], [], [], [], []
         for i, line in enumerate(fp):
+            
             info = line.split("\t")
+
             if info[1] in label_map and info[1] in source_to_dest_sub:
                 title_words = info[-2].split(":")[1].strip().split(",")
                 title_words = title_words[:min(len(title_words), max_len)]

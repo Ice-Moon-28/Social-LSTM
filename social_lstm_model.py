@@ -4,7 +4,6 @@ import argparse
 import pickle as pickle
 import torch.nn as nn
 import numpy as np
-from transformers import get_scheduler
 
 from torch.autograd import Variable
 from sklearn.metrics import roc_auc_score
@@ -15,6 +14,7 @@ from model.gpt import all_positive, prompt_gpt, random_guess
 from model.model_choices import ModelChoices
 from embeddings import Embeddings
 from model.social_lstm import SocialLSTM
+from util.set_seed import set_seed
 from util.load_data import load_data
 from model.transformer import SocialTransformer
 from torch.optim.lr_scheduler import LambdaLR
@@ -28,17 +28,6 @@ from util.summary_writer import log_learning_rate, log_scale_test, log_scale_tra
 from transformers import get_scheduler
 
 
-
-
-
-def set_seed(seed=42):
-    random.seed(seed)                      # 设置 Python 随机数种子
-    np.random.seed(seed)                   # 设置 NumPy 随机数种子
-    torch.manual_seed(seed)                # 设置 PyTorch CPU 随机数种子
-    torch.cuda.manual_seed(seed)           # 设置 PyTorch GPU 随机数种子
-    torch.cuda.manual_seed_all(seed)       # 设置所有 GPU 随机数种子
-    torch.backends.cudnn.deterministic = True  # 确保 CUDA 的卷积操作确定性
-    torch.backends.cudnn.benchmark = False
 
 
 
@@ -145,7 +134,6 @@ def evaluate_auc(model, test_data):
 
 if __name__ == "__main__":
     set_seed(seed=constants.SEED)
-
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--learning_rate", type=float, default=0.01)
@@ -295,6 +283,7 @@ if __name__ == "__main__":
         auc = train(model, train_data, val_data, test_data, optimizer, epochs=args.epochs, log_file=args.log_file, save_embeds=args.save_embeds,
             # scheduler=scheduler,
         )
+        
     elif (ModelChoices(args.model) == ModelChoices.GPT_4o) or (ModelChoices(args.model) == ModelChoices.GPT_4o_mini):
         prompt_gpt(choice=ModelChoices(args.model))
     elif (ModelChoices(args.model) == ModelChoices.Random):
