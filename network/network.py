@@ -94,7 +94,6 @@ class RedditNetwork:
                     user = constants.NUM_USERS if not info[2] in user_id_map else user_id_map[info[2]]
 
                     user_source_sub.append((source_sub, user))
-
             
         return user_source_sub
 
@@ -117,13 +116,12 @@ class RedditNetwork:
         edges = self.graph.edges(etype='interacts')
         total_edges = len(edges[0])
 
-        batch_count = 0
-
-        best_loss = float('inf')
-
+        best_loss = self.eval_embedding()
 
         for epoch in range(self.num_epochs):
             total_loss = 0.0
+
+            batch_count = 0
             
             perm = torch.randperm(total_edges)
             
@@ -151,15 +149,66 @@ class RedditNetwork:
 
                 total_loss += batch_loss.item()
 
-                print("Batch loss:", batch_loss.item())
+                print(f"Batch {batch_count} loss:", batch_loss.item())
 
-                print("Total loss:", total_loss / batch_count)
+                print(f"Total loss:{epoch+1}", total_loss / batch_count)
 
-            print(f"Epoch {epoch+1}/{self.num_epochs}, Average Loss: {total_loss / (total_edges/self.batch_size):.4f}")
+            print(f"Epoch {epoch+1}/{self.num_epochs}, Average Loss: {total_loss / batch_count:.4f}")
 
-            if total_loss < best_loss:
-                best_loss = total_loss
+            eval_loss = self.eval_embedding()
+
+            if eval_loss < best_loss:
+                best_loss = eval_loss
                 
-                torch.save(self.model.state_dict(), f'{best_loss}/best_model.pt')
+                self.save_model()
+                self.save_embeddings()
 
-        return total_loss
+                print("New Best loss and Saved model and embeddings", "Best loss:", best_loss.item())
+
+        return eval_loss
+    
+    def eval_embedding(self):
+        self.model.eval()
+        with torch.no_grad():
+            edges = self.graph.edges(etype='interacts')
+            
+            batch_users = edges[0]
+            batch_subreddits = edges[1]
+
+            node_embeddings = self.model(self.graph, self.features)
+
+            user_embeddings = node_embeddings['user'][batch_users]
+            subreddit_embeddings = node_embeddings['subreddit'][batch_subreddits]
+
+            batch_loss = self.loss_fn(user_embeddings, subreddit_embeddings)
+
+            print("Eval loss:", batch_loss.item())
+
+        return batch_loss
+
+    
+    def save_model(self, filename='model.pt'):
+        torch.save(self.model.state_dict(), filename)
+    
+    def save_embeddings(self, filename='embeddings.pt'):
+        self.model.eval() 
+        with torch.no_grad():
+            node_embeddings = self.model(self.graph, self.features)
+
+        user_embeddings = node_embeddings['user']
+        subreddit_embeddings = node_embeddings['subreddit']
+        
+        user_ids = self.graph.nodes('user')
+        subreddit_ids = self.graph.nodes('subreddit') 
+
+        states = {
+            'user_embeddings': user_embeddings,
+            'user_ids': user_ids,
+            'subreddit_embeddings': subreddit_embeddings,
+            'subreddit_ids': subreddit_ids,
+        }
+
+        torch.save(states, filename)
+    
+    def load_embeddings(self):
+        pass
