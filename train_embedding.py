@@ -12,10 +12,11 @@ def main():
     parser.add_argument("--learning_rate", type=float, default=0.01)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=512)
+    parser.add_argument("--load_model", type=bool, default=False)
 
     args = parser.parse_args()
 
-    network = RedditNetwork(epochs=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size)
+    network = RedditNetwork(epochs=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size, load=args.load_model)
 
     network.train()
 
