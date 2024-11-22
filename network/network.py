@@ -4,26 +4,22 @@ import torch
 import torch.nn as nn
 from model.graph_conv import GCN
 from model.loss import SimilarityLoss
-import torch.autograd as autograd
-autograd.set_detect_anomaly(True)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class RedditNetwork:
-    def __init__(self, epochs=10, batch_size=64, learning_rate=0.01, load=False):
+    def __init__(self, epochs=10, batch_size=64, learning_rate=0.01):
         user_source_sub = self.load_graph_data()
 
         print("Building graph... on", device)
 
         self.graph = self.build_graph(user_source_sub).to(device)
 
-       
-
         self.num_users = self.graph.num_nodes('user')
         self.num_subreddits = self.graph.num_nodes('subreddit')
 
-        self.model = GCN(in_feats=300, hidden_feats=128, out_feats=300).to(device)             
-        
+        self.model = GCN(in_feats=300, hidden_feats=128, out_feats=300).to(device) 
+
         self.user_features = torch.randn(self.num_users, 300, requires_grad=True).to(device)  # 用户特征
         self.subreddit_features = torch.randn(self.num_subreddits, 300, requires_grad=True).to(device) # 社区特征
 
@@ -31,10 +27,6 @@ class RedditNetwork:
             'user': self.user_features,
             'subreddit': self.subreddit_features
         }
-
-        if load:
-            self.load_model()
-            self.load_embeddings()
 
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
 
@@ -223,20 +215,5 @@ class RedditNetwork:
 
         torch.save(states, filename)
     
-    def load_model(self, filename='model.pt'):
-        print("Loading model from", filename)
-        self.model.load_state_dict(torch.load(filename))
-        
-
-    def load_embeddings(self, filename='embeddings.pt'):
-        print("Loading embeddings from", filename)
-        states = torch.load(filename)
-
-        self.user_features = states['user_embeddings'].to(device)
-        self.subreddit_features = states['subreddit_embeddings'].to(device)
-
-        self.features = {
-            'user': self.user_features,
-            'subreddit': self.subreddit_features
-        }
-        
+    def load_embeddings(self):
+        pass
