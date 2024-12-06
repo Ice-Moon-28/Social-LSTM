@@ -2,6 +2,7 @@ import constants
 import dgl
 import torch
 import torch.nn as nn
+import numpy as np
 from embeddings import Embeddings
 from model.embedding import EmbeddingType
 from model.graph_conv import GCN
@@ -185,6 +186,7 @@ class RedditNetwork:
         return eval_loss
     
     def eval_embedding(self):
+        return np.Infinity
         self.model.eval()
         with torch.no_grad():
             edges = self.graph.edges(etype='interacts')
