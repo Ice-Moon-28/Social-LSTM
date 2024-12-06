@@ -127,7 +127,7 @@ class RedditNetwork:
         edges = (edges[0].to(device), edges[1].to(device))
         total_edges = len(edges[0])
 
-        best_loss = self.eval_embedding()
+        best_loss = np.Infinity
 
         for epoch in range(self.num_epochs):
             total_loss = 0.0
@@ -186,7 +186,6 @@ class RedditNetwork:
         return eval_loss
     
     def eval_embedding(self):
-        return np.Infinity
         self.model.eval()
         with torch.no_grad():
             edges = self.graph.edges(etype='interacts')
