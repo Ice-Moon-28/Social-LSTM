@@ -40,7 +40,7 @@ class SimilarityLossWithNegative(nn.Module):
         count = 0
 
         # Step 2: Generate negative samples based on the graph
-        negative_loss = torch.tensor(0.0, device=user_embeddings.device)
+        negative_loss = torch.tensor(0.0, requires_grad=True, device=user_embeddings.device)
         
         for user in batch_users:
             negative_user_embeddings = []
@@ -59,7 +59,7 @@ class SimilarityLossWithNegative(nn.Module):
 
             negative_user_embeddings = total_user_embeddings[user].unsqueeze(0).expand_as(sampled_negative_embeddings)
 
-            negative_loss += self.cosine_similarity(negative_user_embeddings, sampled_negative_embeddings).mean()
+            negative_loss = negative_loss + self.cosine_similarity(negative_user_embeddings, sampled_negative_embeddings).mean()
 
             count += 1
             if count % 1000 == 0:

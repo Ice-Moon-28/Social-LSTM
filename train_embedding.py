@@ -11,7 +11,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--learning_rate", type=float, default=0.005)
+    parser.add_argument("--learning_rate", type=float, default=0.01)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=512)
     parser.add_argument("--load_model", type=bool, default=False)
