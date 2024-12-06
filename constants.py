@@ -3,11 +3,14 @@ import torch
 # CONSTANTS YOU NEED TO MODIFY
 
 #whether to train on GPU
-CUDA=False
-device = torch.device("cuda") if CUDA else torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
-# device = torch.device("cpu")
+# device = torch.device("cuda") if torch.cuda.is_available() else torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
+device = torch.device("mps")
+
+CUDA = False
+
+embedding_device = torch.device("cpu")
 # root directory that contains the training/testing data
-DATA_HOME="data"
+DATA_HOME="data/prediction/"
 LOG_DIR="./logs"
 #whether to show results on the test set
 PRINT_TEST=False

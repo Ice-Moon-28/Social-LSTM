@@ -2,13 +2,23 @@ import constants
 import dgl
 import torch
 import torch.nn as nn
+from embeddings import Embeddings
+from model.embedding import EmbeddingType
 from model.graph_conv import GCN
-from model.loss import SimilarityLoss
+from model.loss import LossType, SimilarityLoss, SimilarityLossWithNegative
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = constants.embedding_device
 
 class RedditNetwork:
-    def __init__(self, epochs=10, batch_size=64, learning_rate=0.01):
+    def __init__(
+            self,
+            epochs=10,
+            batch_size=64,
+            learning_rate=0.01,
+            loss_type=LossType.SIMILARITY,
+            embedding_type=EmbeddingType.RANDOM_INITIALIZE,
+            negative_samples=5,
+        ):
         user_source_sub = self.load_graph_data()
 
         print("Building graph... on", device)
@@ -20,13 +30,7 @@ class RedditNetwork:
 
         self.model = GCN(in_feats=300, hidden_feats=128, out_feats=300).to(device) 
 
-        self.user_features = torch.randn(self.num_users, 300, requires_grad=True).to(device)  # 用户特征
-        self.subreddit_features = torch.randn(self.num_subreddits, 300, requires_grad=True).to(device) # 社区特征
-
-        self.features = {
-            'user': self.user_features,
-            'subreddit': self.subreddit_features
-        }
+        self.features = self.load_embeddings(embedding_type=embedding_type)
 
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
 
@@ -34,7 +38,8 @@ class RedditNetwork:
 
         self.num_epochs = epochs
 
-        self.loss_fn = SimilarityLoss()
+        self.loss_fn = self.load_loss_fn(loss_type=loss_type, negative_samples=negative_samples)
+
 
 
     def load_graph_data(self, max_len=512):
@@ -101,10 +106,8 @@ class RedditNetwork:
         return user_source_sub
 
     def build_graph(self, edges):
-        # 分离边数据：source为社区，dest为用户
         source_sub, user = zip(*edges)
 
-        # 创建二部图 (社区节点 -> 用户节点)
         graph = dgl.heterograph({
             ('user', 'interacts', 'subreddit'): (user, source_sub),
             ('subreddit', 'interacted_by', 'user'): (source_sub, user),
@@ -112,11 +115,13 @@ class RedditNetwork:
 
         return graph
 
-    def train(self):  # 将批次大小调小
+    def train(self):  
         self.model.train()
         
         # 获取所有边
         edges = self.graph.edges(etype='interacts')
+
+        # edges = self.mask_invalid_edge(edges)
 
         edges = (edges[0].to(device), edges[1].to(device))
         total_edges = len(edges[0])
@@ -130,7 +135,6 @@ class RedditNetwork:
             
             perm = torch.randperm(total_edges)
             
-            # 分批次处理
             for i in range(0, total_edges, self.batch_size):
                 batch_indices = perm[i:i+self.batch_size]
 
@@ -146,7 +150,15 @@ class RedditNetwork:
                 user_embeddings = node_embeddings['user'][batch_users].to(device)
                 subreddit_embeddings = node_embeddings['subreddit'][batch_subreddits].to(device)
 
-                batch_loss = self.loss_fn(user_embeddings, subreddit_embeddings)
+                batch_loss = self.loss_fn(
+                    user_embeddings,
+                    subreddit_embeddings,
+                    batch_users=batch_users,
+                    batch_subreddits=batch_subreddits,
+                    total_user_embeddings=node_embeddings['user'],
+                    total_subreddit_embeddings=node_embeddings['subreddit'],
+                    graph=self.graph,
+                )
 
                 batch_loss.backward()
                 
@@ -177,6 +189,8 @@ class RedditNetwork:
         with torch.no_grad():
             edges = self.graph.edges(etype='interacts')
             
+            # edges = self.mask_invalid_edge(edges)
+            
             batch_users = edges[0]
             batch_subreddits = edges[1]
 
@@ -185,7 +199,15 @@ class RedditNetwork:
             user_embeddings = node_embeddings['user'][batch_users].to(device)
             subreddit_embeddings = node_embeddings['subreddit'][batch_subreddits].to(device)
 
-            batch_loss = self.loss_fn(user_embeddings, subreddit_embeddings)
+            batch_loss = self.loss_fn(
+                user_embeddings,
+                subreddit_embeddings,
+                batch_users=batch_users,
+                batch_subreddits=batch_subreddits,
+                total_user_embeddings=node_embeddings['user'],
+                total_subreddit_embeddings=node_embeddings['subreddit'],
+                graph=self.graph,
+            )
 
             print("Eval loss:", batch_loss.item())
 
@@ -215,5 +237,48 @@ class RedditNetwork:
 
         torch.save(states, filename)
     
-    def load_embeddings(self):
-        pass
+    def load_embeddings(self, embedding_type=EmbeddingType.RANDOM_INITIALIZE):
+        self.pad_embeds = torch.zeros(1, constants.WORD_EMBED_DIM)
+
+        if embedding_type == EmbeddingType.RANDOM_INITIALIZE:
+            self.user_features = torch.randn(self.num_users, 300, requires_grad=True).to(device)  # 用户特征
+            self.subreddit_features = torch.randn(self.num_subreddits, 300, requires_grad=True).to(device) # 社区特征
+
+            self.user_features = torch.cat([self.user_features, self.pad_embeds], dim=0)
+            self.subreddit_features = torch.cat([self.subreddit_features, self.pad_embeds], dim=0)
+
+            import pdb; pdb.set_trace()
+
+            return {
+                'user': self.user_features,
+                'subreddit': self.subreddit_features
+            }
+        
+        elif embedding_type == EmbeddingType.PRETRAINED:
+            self.user_features = Embeddings(constants.USER_EMBEDS)._vecs
+               
+            self.subreddit_features = Embeddings(constants.SUBREDDIT_EMBEDS)._vecs
+
+            self.user_features = torch.tensor(self.user_features, dtype=torch.float32).to(device=device)
+            self.subreddit_features = torch.tensor(self.subreddit_features, dtype=torch.float32).to(device=device)
+
+            self.user_features = torch.cat([self.user_features, self.pad_embeds], dim=0)
+            self.subreddit_features = torch.cat([self.subreddit_features, self.pad_embeds], dim=0)
+
+            return {
+                'user': self.user_features,
+                'subreddit': self.subreddit_features
+            }
+
+    def load_loss_fn(self, loss_type=LossType.SIMILARITY, negative_samples=5):
+        if loss_type == LossType.SIMILARITY:
+            return SimilarityLoss()
+        else:
+            return SimilarityLossWithNegative(negative_sample=negative_samples)
+        
+    def mask_invalid_edge(self, edges):
+        edges_src, edges_des = edges
+
+        mask = (edges_src != constants.NUM_USERS) & (edges_des != constants.NUM_SUBREDDITS)
+
+        return (edges_src[mask], edges_des[mask])

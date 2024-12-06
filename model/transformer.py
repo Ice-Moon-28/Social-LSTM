@@ -80,7 +80,11 @@ class SocialTransformer(nn.Module):
         
 
         self.dropout = nn.Dropout(dropout_rate) 
-        
+
+        # self.debug_user_min = np.Infinity
+        # self.debug_user_max = - np.Infinity 
+        # self.debug_subreddit_min = np.Infinity
+        # self.debug_subreddit_max = - np.Infinity 
     def _load_glove_embeddings(self):
         print("Loading word embeddings...")
         with open(constants.WORD_EMBEDS) as fp:
@@ -112,6 +116,7 @@ class SocialTransformer(nn.Module):
 
     def forward(self, text_inputs, user_inputs, subreddit_inputs, metafeats, lengths):
         # Embedding lookup
+        # self.debug(user_inputs, subreddit_inputs)
 
         text_inputs = self.embed_module(text_inputs)
         user_inputs = self.user_embeds(user_inputs)
@@ -154,3 +159,16 @@ class SocialTransformer(nn.Module):
             weights = self.out_layer2(self.relu(self.out_layer1(final_input)))
         
         return weights
+    # def debug(self, user_inputs, subreddit_inputs):
+    #     self.debug_subreddit_max = max(torch.max(subreddit_inputs), self.debug_subreddit_max)
+    #     self.debug_subreddit_min = min(torch.min(subreddit_inputs), self.debug_subreddit_min)
+    #     self.debug_user_max = max(torch.max(user_inputs), self.debug_user_max)
+    #     self.debug_user_min = min(torch.min(user_inputs), self.debug_user_min)
+
+    #     print(
+    #         self.debug_user_min,
+    #         self.debug_user_max,
+    #         self.debug_subreddit_min,
+    #         self.debug_subreddit_max,
+    #         "=== DEBUG ==="
+    #     )

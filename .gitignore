@@ -104,3 +104,11 @@ data/
 runs/
 
 *.pt
+
+*.tar.gz
+
+*.tar
+
+__pycache__/
+
+.github/

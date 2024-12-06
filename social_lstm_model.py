@@ -44,7 +44,7 @@ def get_embeddings(data):
     return ids, np.concatenate(embeds)
 
 def train(model, train_data, val_data, test_data, optimizer,
-        epochs=10, log_every=100, log_file=None, save_embeds=False):
+        epochs=10, log_every=100, log_file=None, save_embeds=False, enable_scheduler=False, scheduler=None):
     if not log_file is None:
         lg_str = log_file
         log_file = open(log_file, "w")
@@ -70,8 +70,8 @@ def train(model, train_data, val_data, test_data, optimizer,
             loss.backward()
             optimizer.step()
 
-            # scheduler.step()
-
+            if enable_scheduler:
+                scheduler.step()
             if ema_loss is None:
                 ema_loss = loss.item()
             else:
@@ -163,12 +163,11 @@ if __name__ == "__main__":
     
     parser.add_argument("--enable_mean_pooling", type=bool, default=False,
             help="Enable transformer encoder's mean pooling")
+    parser.add_argument("--enable_scheduler", type=bool, default=False,
+            help="Enable scheduler")
     
     parser.add_argument("--total_steps", type=int, default=0, help='total steps')
     parser.add_argument("--warmup_steps", type=int, default=1000, help='warmup steps')
-
-    parser.add_argument("--dropout_rate", type=float, default=0.1,
-            help="The dropout_rate of the transformer model")
    
     args = parser.parse_args()
     dropout = None if args.single_layer else args.dropout
@@ -240,17 +239,18 @@ if __name__ == "__main__":
         
         optimizer = torch.optim.Adam(filter(lambda p : p.requires_grad, model.parameters()), lr=args.learning_rate)
 
-        # def lr_lambda(current_step: int):
-        #     warmup_steps = args.warmup_steps
-        #     if current_step < warmup_steps:
-        #         return current_step / warmup_steps  # 学习率逐步增加
-        #     return 1.0  # 保持初始学习率
+        def lr_lambda(current_step: int):
+            warmup_steps = args.warmup_steps
+            if current_step < warmup_steps:
+                return current_step / warmup_steps  # 学习率逐步增加
+            return 1.0  # 保持初始学习率
 
-        # # 使用 LambdaLR 设置学习率调度器
-        # scheduler = LambdaLR(optimizer, lr_lambda)
+        # 使用 LambdaLR 设置学习率调度器
+        if args.enable_scheduler:
+            scheduler = LambdaLR(optimizer, lr_lambda)
       
         auc = train(model, train_data, val_data, test_data, optimizer, epochs=args.epochs, log_file=args.log_file, save_embeds=args.save_embeds,
-                # scheduler=scheduler,
+                scheduler=scheduler, enable_scheduler=args.enable_scheduler
         )
 
     elif (ModelChoices(args.model) == ModelChoices.Transformer):
@@ -271,17 +271,27 @@ if __name__ == "__main__":
 
         optimizer = torch.optim.Adam(filter(lambda p : p.requires_grad, model.parameters()), lr=args.learning_rate)
 
-        # def lr_lambda(current_step: int):
-        #     warmup_steps = args.warmup_steps
-        #     if current_step < warmup_steps:
-        #         return current_step / warmup_steps  # 学习率逐步增加
-        #     return 1.0  # 保持初始学习率
+        def lr_lambda(current_step: int):
+            warmup_steps = args.warmup_steps
+            if current_step < warmup_steps:
+                return current_step / warmup_steps  # 学习率逐步增加
+            return 1.0  # 保持初始学习率
 
-        # # 使用 LambdaLR 设置学习率调度器
-        # scheduler = LambdaLR(optimizer, lr_lambda)
+        # 使用 LambdaLR 设置学习率调度器
+        if args.enable_scheduler:
+            scheduler = LambdaLR(optimizer, lr_lambda)
     
-        auc = train(model, train_data, val_data, test_data, optimizer, epochs=args.epochs, log_file=args.log_file, save_embeds=args.save_embeds,
-            # scheduler=scheduler,
+        auc = train(
+            model,
+            train_data,
+            val_data,
+            test_data,
+            optimizer,
+            epochs=args.epochs,
+            log_file=args.log_file,
+            save_embeds=args.save_embeds,
+            scheduler=scheduler,
+            enable_scheduler=args.enable_scheduler,
         )
         
     elif (ModelChoices(args.model) == ModelChoices.GPT_4o) or (ModelChoices(args.model) == ModelChoices.GPT_4o_mini):

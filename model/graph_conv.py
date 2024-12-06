@@ -16,7 +16,6 @@ class GCN(nn.Module):
         })
 
     def forward(self, g, features):
-       
         h = self.conv1(g, features) 
         h = {k: torch.relu(v) for k, v in h.items()}  
         h = self.conv2(g, h)
