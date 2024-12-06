@@ -261,6 +261,7 @@ class RedditNetwork:
 
             self.user_features = torch.tensor(self.user_features, dtype=torch.float32).to(device=device)
             self.subreddit_features = torch.tensor(self.subreddit_features, dtype=torch.float32).to(device=device)
+            self.pad_embeds = self.pad_embeds.to(device=device)
 
             self.user_features = torch.cat([self.user_features, self.pad_embeds], dim=0)
             self.subreddit_features = torch.cat([self.subreddit_features, self.pad_embeds], dim=0)

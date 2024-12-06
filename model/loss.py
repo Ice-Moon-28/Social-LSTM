@@ -37,11 +37,14 @@ class SimilarityLossWithNegative(nn.Module):
 
         positive_similarity = self.cosine_similarity(user_embeddings, subreddit_embeddings)
 
+        count = 0
+
         # Step 2: Generate negative samples based on the graph
         negative_loss = []
         for user in batch_users:
             negative_user_embeddings = []
             connected_subreddits = graph.successors(user, etype='interacts')
+            import pdb; pdb.set_trace()
 
             connected_subreddits_set = set(connected_subreddits.cpu().numpy())
             
@@ -57,6 +60,10 @@ class SimilarityLossWithNegative(nn.Module):
             negative_user_embeddings = total_user_embeddings[user].unsqueeze(0).expand_as(sampled_negative_embeddings)
 
             negative_loss += self.cosine_similarity(negative_user_embeddings, sampled_negative_embeddings)
+
+            count += 1
+            if count % 1000 == 0:
+                print("Processed {} users".format(count))
 
         positive_loss = 1 - positive_similarity.mean()
         negative_loss = torch.tensor(negative_loss).mean()
