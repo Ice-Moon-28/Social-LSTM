@@ -7,6 +7,7 @@ from embeddings import Embeddings
 from model.embedding import EmbeddingType
 from model.graph_conv import GCN
 from model.loss import LossType, SimilarityLoss, SimilarityLossWithNegative
+from util.sparse_matrix import sparse_eye
 
 device = constants.embedding_device
 
@@ -283,7 +284,20 @@ class RedditNetwork:
                 'user': self.user_features,
                 'subreddit': self.subreddit_features
             }
+        
+        elif embedding_type == EmbeddingType.ONE_HOT_WITH_BIGGER_SIZE:
+            self.num_users = self.graph.num_nodes('user')
+            self.num_subreddits = self.graph.num_nodes('subreddit')
 
+            dimension = max(self.num_users, self.num_subreddits)
+
+            self.user_features = sparse_eye(self.num_users, dimension).to(device=device)
+            self.subreddit_features = sparse_eye(self.num_subreddits, dimension).to(device=device)
+
+            return {
+                'user': self.user_features,
+                'subreddit': self.subreddit_features
+            }
 
     def load_loss_fn(self, loss_type=LossType.SIMILARITY, negative_samples=5):
         if loss_type == LossType.SIMILARITY:
