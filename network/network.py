@@ -19,6 +19,7 @@ class RedditNetwork:
             loss_type=LossType.SIMILARITY,
             embedding_type=EmbeddingType.RANDOM_INITIALIZE,
             negative_samples=5,
+            hidden_feats=128
         ):
         user_source_sub = self.load_graph_data()
 
@@ -29,9 +30,9 @@ class RedditNetwork:
         self.num_users = self.graph.num_nodes('user')
         self.num_subreddits = self.graph.num_nodes('subreddit')
 
-        self.model = GCN(in_feats=300, hidden_feats=128, out_feats=300).to(device) 
-
         self.features = self.load_embeddings(embedding_type=embedding_type)
+
+        self.model = GCN(in_feats=self.features['user'].shape[1], hidden_feats=hidden_feats, out_feats=300).to(device) 
 
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
 
@@ -40,7 +41,6 @@ class RedditNetwork:
         self.num_epochs = epochs
 
         self.loss_fn = self.load_loss_fn(loss_type=loss_type, negative_samples=negative_samples)
-
 
 
     def load_graph_data(self, max_len=512):
@@ -271,6 +271,19 @@ class RedditNetwork:
                 'user': self.user_features,
                 'subreddit': self.subreddit_features
             }
+        
+        elif embedding_type == EmbeddingType.ONE_HOT:
+            self.num_users = self.graph.num_nodes('user')
+            self.num_subreddits = self.graph.num_nodes('subreddit')
+
+            self.user_features = torch.tensor([[i] for i in range(self.num_users)], dtype=torch.float32).to(device=device)
+            self.subreddit_features = torch.tensor([[i] for i in range(self.num_subreddits)], dtype=torch.float32).to(device=device)
+
+            return {
+                'user': self.user_features,
+                'subreddit': self.subreddit_features
+            }
+
 
     def load_loss_fn(self, loss_type=LossType.SIMILARITY, negative_samples=5):
         if loss_type == LossType.SIMILARITY:

@@ -168,6 +168,7 @@ if __name__ == "__main__":
     
     parser.add_argument("--total_steps", type=int, default=0, help='total steps')
     parser.add_argument("--warmup_steps", type=int, default=1000, help='warmup steps')
+    parser.add_argument("--embedding_self_trained", type=bool, default=False, help='Self trained embeddding')
    
     args = parser.parse_args()
     dropout = None if args.single_layer else args.dropout
@@ -182,9 +183,11 @@ if __name__ == "__main__":
 
 
     print("Loading training data")
+    
     # WE HAVE PRE-CONSTRUCTED TRAIN/VAL/TEST DATA USING load_data
     # this avoids re-doing all the pre-processing everytime the code is
     # run. This data is fixed to a batch size of 512.
+
     train_data = pickle.load(open(constants.TRAIN_DATA, 'rb'))
     val_data = pickle.load(open(constants.VAL_DATA, 'rb'))
     test_data = pickle.load(open(constants.TEST_DATA, 'rb'))
@@ -248,6 +251,8 @@ if __name__ == "__main__":
         # 使用 LambdaLR 设置学习率调度器
         if args.enable_scheduler:
             scheduler = LambdaLR(optimizer, lr_lambda)
+        else:
+            scheduler = None
       
         auc = train(model, train_data, val_data, test_data, optimizer, epochs=args.epochs, log_file=args.log_file, save_embeds=args.save_embeds,
                 scheduler=scheduler, enable_scheduler=args.enable_scheduler
@@ -264,7 +269,7 @@ if __name__ == "__main__":
             final_dense=args.final_dense,
             include_embeds=args.final_layer_social,
             args=args,
-            dropout_rate=args.dropout
+            dropout_rate=args.dropout,
         )
 
         model.to(device)
@@ -280,6 +285,8 @@ if __name__ == "__main__":
         # 使用 LambdaLR 设置学习率调度器
         if args.enable_scheduler:
             scheduler = LambdaLR(optimizer, lr_lambda)
+        else:
+            scheduler = None
     
         auc = train(
             model,

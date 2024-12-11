@@ -6,6 +6,7 @@ import numpy as np
 
 import constants
 from embeddings import Embeddings
+from util.load_self_trained_embedding import load_embeddings
 
 class SocialTransformer(nn.Module):
     def __init__(
@@ -38,6 +39,8 @@ class SocialTransformer(nn.Module):
         super(SocialTransformer, self).__init__()
         
         # Load embeddings
+        self.args = args
+
         glove_embeds = self._load_glove_embeddings()
         self.glove_embeds= torch.FloatTensor(glove_embeds)
         self.pad_embed = torch.zeros(1, constants.WORD_EMBED_DIM)
@@ -62,7 +65,6 @@ class SocialTransformer(nn.Module):
         self.include_meta = include_meta
         self.linear_include_embeds = include_embeds
         self.final_dense = final_dense
-        self.args = args
 
         # Transformer Encoder
         encoder_layer = nn.TransformerEncoderLayer(d_model=constants.WORD_EMBED_DIM, nhead=nhead, dim_feedforward=feedward_hidden_dim, dropout=dropout_rate)
@@ -104,15 +106,26 @@ class SocialTransformer(nn.Module):
 
 
     def _load_user_embeddings(self):
-        
         print("Loading user embeddings...")
-        embeds = Embeddings(constants.USER_EMBEDS)
-        return embeds._vecs
+
+        if self.args.embedding_self_trained:
+            embeds = load_embeddings()
+
+            return embeds['user_embeddings']
+        else:
+            embeds = Embeddings(constants.USER_EMBEDS)
+            return embeds._vecs
 
     def _load_subreddit_embeddings(self):
         print("Loading subreddit embeddings...")
-        embeds = Embeddings(constants.SUBREDDIT_EMBEDS)
-        return embeds._vecs
+
+        if self.args.embedding_self_trained:
+            embeds = load_embeddings()
+
+            return embeds['subreddit_embeddings']
+        else:
+            embeds = Embeddings(constants.SUBREDDIT_EMBEDS)
+            return embeds._vecs
 
     def forward(self, text_inputs, user_inputs, subreddit_inputs, metafeats, lengths):
         # Embedding lookup

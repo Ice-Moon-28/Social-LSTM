@@ -4,7 +4,7 @@ import torch
 
 #whether to train on GPU
 # device = torch.device("cuda") if torch.cuda.is_available() else torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
-device = torch.device("cuda")
+device = torch.device("mps")
 
 CUDA = True
 

@@ -20,6 +20,8 @@ def main():
     parser.add_argument("--embedding_type", type=int, default=1)
     parser.add_argument("--negative_sample", type=int, default=5)
 
+    parser.add_argument("--hidden_feats", type=int, default=128)
+
     args = parser.parse_args()
 
     network = RedditNetwork(
@@ -30,6 +32,7 @@ def main():
         loss_type=LossType(args.loss_type),
         embedding_type=EmbeddingType(args.embedding_type),
         negative_samples=args.negative_sample,
+        hidden_feats=args.hidden_feats,
     )
 
     network.train()
