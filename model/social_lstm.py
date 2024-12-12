@@ -9,7 +9,7 @@ from sklearn.metrics import roc_auc_score
 from constants import device
 
 import constants
-from embeddings import Embeddings
+from model.embedding import Embeddings
 
 class SocialLSTM(nn.Module):
     """

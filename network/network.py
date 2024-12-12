@@ -3,10 +3,10 @@ import dgl
 import torch
 import torch.nn as nn
 import numpy as np
-from embeddings import Embeddings
+from model.embedding import Embeddings
 from model.embedding import EmbeddingType
 from model.graph_conv import GCN
-from model.loss import LossType, SimilarityLoss, SimilarityLossWithNegative
+from model.loss import LossType, SimilarityLoss, SimilarityLossUseSigmoid, SimilarityLossWithNegative
 from util.sparse_matrix import sparse_eye
 
 device = constants.embedding_device
@@ -302,8 +302,10 @@ class RedditNetwork:
     def load_loss_fn(self, loss_type=LossType.SIMILARITY, negative_samples=5):
         if loss_type == LossType.SIMILARITY:
             return SimilarityLoss()
-        else:
+        elif loss_type == LossType.SIMILARITY_WITH_NEGATIVE:
             return SimilarityLossWithNegative(negative_sample=negative_samples)
+        elif loss_type == LossType.SIMILARITY_WITH_NEGATIVE_USE_SIGMOID:
+            return SimilarityLossUseSigmoid(negative_sample=negative_samples)
         
     def mask_invalid_edge(self, edges):
         edges_src, edges_des = edges

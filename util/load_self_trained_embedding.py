@@ -2,6 +2,10 @@ import torch
 
 import constants
 
+def format_embedding_file_name(embedding_type, negative_sample, hidden_feats):
+    return "self_trained_embeddings/" + f"embedding_type_{embedding_type}_negative_sample_{negative_sample}_hidden_feats_{hidden_feats}.pt"
+
+
 def load_embeddings(filename='embeddings.pt'):
     """
     Load embeddings from the specified file.
@@ -11,6 +15,7 @@ def load_embeddings(filename='embeddings.pt'):
     """
     try:
         # 使用 torch.load 直接加载 .pt 文件
+
         states = torch.load(filename, map_location="cpu")
 
         # 提取保存的内容
@@ -34,3 +39,6 @@ def load_embeddings(filename='embeddings.pt'):
     except RuntimeError as e:
         print(f"Error loading the file: {e}")
         return None
+    
+if __name__ == "__main__":
+    print(format_embedding_file_name(2, 5, 128))

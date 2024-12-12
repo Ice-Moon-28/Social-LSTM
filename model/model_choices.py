@@ -7,5 +7,6 @@ class ModelChoices(Enum):
     GPT_4o_mini = 4
     Random = 5
     AllPositive = 6
+    MLP = 7
 
     

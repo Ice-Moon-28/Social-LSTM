@@ -12,7 +12,7 @@ from constants import device
 import constants
 from model.gpt import all_positive, prompt_gpt, random_guess
 from model.model_choices import ModelChoices
-from embeddings import Embeddings
+from model.multi_layers_perception import MultiLayerPerceptron
 from model.social_lstm import SocialLSTM
 from util.set_seed import set_seed
 from util.load_data import load_data
@@ -66,12 +66,15 @@ def train(model, train_data, val_data, test_data, optimizer,
             text, users, subs, metafeats, labels = Variable(text), Variable(users), Variable(subs), Variable(metafeats), Variable(labels)
             optimizer.zero_grad()
             outputs = model(text, users, subs, metafeats, lengths)
+
             loss = criterion(outputs.squeeze(), labels)
+
             loss.backward()
             optimizer.step()
 
             if enable_scheduler:
                 scheduler.step()
+
             if ema_loss is None:
                 ema_loss = loss.item()
             else:
@@ -120,7 +123,9 @@ def evaluate_auc(model, test_data):
         text, users, subs, metafeats, labels = Variable(text), Variable(users), Variable(subs), Variable(metafeats), Variable(labels)
         
         if constants.ENABLE_CROSS_ENTROPY:
-            outputs = model(text, users, subs, metafeats, lengths)[:,1]
+            outputs = model(text, users, subs, metafeats, lengths)
+
+            outputs = outputs[:,1]
         else:
             outputs = model(text, users, subs, metafeats, lengths)
 
@@ -163,12 +168,22 @@ if __name__ == "__main__":
     
     parser.add_argument("--enable_mean_pooling", type=bool, default=False,
             help="Enable transformer encoder's mean pooling")
-    parser.add_argument("--enable_scheduler", type=bool, default=False,
-            help="Enable scheduler")
+    parser.add_argument("--enable_scheduler", action='store_true',
+            help="Enable scheduler"
+    )
+
+    parser.add_argument("--prepend_social", action='store_true', 
+            help="Prepend social embeddings to the input of the LSTM layer")
     
     parser.add_argument("--total_steps", type=int, default=0, help='total steps')
+    parser.add_argument("--include_text", action="store_true", help='total steps')
     parser.add_argument("--warmup_steps", type=int, default=1000, help='warmup steps')
     parser.add_argument("--embedding_self_trained", type=bool, default=False, help='Self trained embeddding')
+
+    ### parameters for embeddings
+    parser.add_argument("--embedding_type", type=int, default=1)
+    parser.add_argument("--negative_sample", type=int, default=5)
+    parser.add_argument("--hidden_feats", type=int, default=128)
    
     args = parser.parse_args()
     dropout = None if args.single_layer else args.dropout
@@ -176,10 +191,6 @@ if __name__ == "__main__":
         raise Exception("Only one of --lstm_append_social and --lstm_no_social can be True at a time.")
     if args.log_file is None and args.save_embeds:
         raise Exception("A log file must be specified if you want to store the LSTM embeddings of the posts.")
-    if args.lstm_append_social or args.lstm_no_social:
-        prepend_social = None if args.lstm_no_social else False
-    else:
-        prepend_social = True
 
 
     print("Loading training data")
@@ -235,8 +246,14 @@ if __name__ == "__main__":
 
     
     if (ModelChoices(args.model) == ModelChoices.LSTM):
-        model = SocialLSTM(args.hidden_dim, prepend_social=prepend_social, dropout=args.dropout, include_embeds=args.final_layer_social, 
-            include_meta=args.include_meta, final_dense=args.final_dense)
+        model = SocialLSTM(
+            args.hidden_dim,
+            prepend_social=args.prepend_social,
+            dropout=args.dropout,
+            linear_include_embeds=args.final_layer_social, 
+            include_meta=args.include_meta,
+            final_dense=args.final_dense,
+        )
         
         model.to(device)
         
@@ -264,12 +281,12 @@ if __name__ == "__main__":
             feedward_hidden_dim=1024,
             nhead=6,
             num_layers=1,
-            prepend_social=prepend_social,
-            include_meta=args.include_meta,
+            prepend_social=args.prepend_social,
             final_dense=args.final_dense,
-            include_embeds=args.final_layer_social,
+            linear_include_embeds=args.final_layer_social,
             args=args,
             dropout_rate=args.dropout,
+            include_text=args.include_text,
         )
 
         model.to(device)
@@ -307,6 +324,45 @@ if __name__ == "__main__":
         random_guess()
     elif (ModelChoices(args.model) == ModelChoices.AllPositive):
         all_positive()
+
+    elif (ModelChoices(args.model) == ModelChoices.MLP):
+        model = MultiLayerPerceptron(
+            hidden_dims=[300, 1],
+            output_dim=constants.NUM_CLASSES,
+            args=args,
+            activation=nn.ReLU,
+            prepend_social=args.prepend_social,
+            dropout=args.dropout,
+        )
+
+        model.to(device)
+
+        optimizer = torch.optim.Adam(filter(lambda p : p.requires_grad, model.parameters()), lr=args.learning_rate)
+
+        def lr_lambda(current_step: int):
+            warmup_steps = args.warmup_steps
+            if current_step < warmup_steps:
+                return current_step / warmup_steps  # 学习率逐步增加
+            return 1.0  # 保持初始学习率
+
+        # 使用 LambdaLR 设置学习率调度器
+        if args.enable_scheduler:
+            scheduler = LambdaLR(optimizer, lr_lambda)
+        else:
+            scheduler = None
+
+        auc = train(
+            model,
+            train_data,
+            val_data,
+            test_data,
+            optimizer,
+            epochs=args.epochs,
+            log_file=args.log_file,
+            save_embeds=args.save_embeds,
+            scheduler=scheduler,
+            enable_scheduler=args.enable_scheduler,
+        )
 
     
 
