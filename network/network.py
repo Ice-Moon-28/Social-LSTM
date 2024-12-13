@@ -44,6 +44,16 @@ class RedditNetwork:
 
         self.loss_fn = self.load_loss_fn(loss_type=loss_type, negative_samples=negative_samples)
 
+        self.args = {
+            'learning_rate': learning_rate,
+            'epochs': epochs,
+            'batch_size': batch_size,    
+            'loss_type': loss_type.value,
+            'embedding_type': embedding_type.value,
+            'hidden_feats': hidden_feats,
+            'negative_samples': negative_samples,
+        }
+
 
     def load_graph_data(self, max_len=512):
         print("Loading graph data...")
@@ -120,7 +130,7 @@ class RedditNetwork:
 
     def train(self):  
         self.model.train()
-        
+
         # 获取所有边
         edges = self.graph.edges(etype='interacts')
 
@@ -240,11 +250,11 @@ class RedditNetwork:
 
         torch.save(
             states,
-            filename=format_embedding_file_name(
-                embedding_type=self.embedding_type,
-                negative_sample=self.negative_sample,
-                hidden_feats=self.hidden_feats,
-                loss_type=self.loss_type,
+            format_embedding_file_name(
+                embedding_type=self.args['embedding_type'],
+                negative_sample=self.args['negative_samples'],
+                hidden_feats=self.args['hidden_feats'],
+                loss_type=self.args['loss_type'],
             )
         )
     

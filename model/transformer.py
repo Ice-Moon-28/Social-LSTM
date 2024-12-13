@@ -77,7 +77,7 @@ class SocialTransformer(nn.Module):
 
         self.linear_layers = get_mlp(
             input_dim=input_dim,
-            hidden_dims=[512, 32],
+            hidden_dims=[300],
             output_dim=constants.NUM_CLASSES,
             dropout=dropout_rate
         )
