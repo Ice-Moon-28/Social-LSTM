@@ -7,6 +7,7 @@ from model.embedding import Embeddings
 from model.embedding import EmbeddingType
 from model.graph_conv import GCN
 from model.loss import LossType, SimilarityLoss, SimilarityLossUseSigmoid, SimilarityLossWithNegative
+from util.load_self_trained_embedding import format_embedding_file_name
 from util.sparse_matrix import sparse_eye
 
 device = constants.embedding_device
@@ -237,7 +238,15 @@ class RedditNetwork:
             'subreddit_ids': subreddit_ids,
         }
 
-        torch.save(states, filename)
+        torch.save(
+            states,
+            filename=format_embedding_file_name(
+                embedding_type=self.embedding_type,
+                negative_sample=self.negative_sample,
+                hidden_feats=self.hidden_feats,
+                loss_type=self.loss_type,
+            )
+        )
     
     def load_embeddings(self, embedding_type=EmbeddingType.RANDOM_INITIALIZE):
         self.pad_embeds = torch.zeros(1, constants.WORD_EMBED_DIM)

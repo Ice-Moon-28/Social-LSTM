@@ -20,6 +20,8 @@ python social_lstm_model.py --epochs 20 --learning_rate 0.002 --enable_mean_pool
 
 python social_lstm_model.py --epochs 20 --learning_rate 0.005 --enable_mean_pooling false --model 1 --warmup_steps 200 --dropout 0.2 --final_layer_social  --final_dense --enable_scheduler --include_text
 
+python social_lstm_model.py --epochs 20 --learning_rate 0.002 --enable_mean_pooling false --model 1 --warmup_steps 200 --dropout 0.2 --final_layer_social  --final_dense --enable_scheduler --include_text
+
 
 
 python social_lstm_model.py --epochs 20 --learning_rate 0.05 --enable_mean_pooling false --model 7 --warmup_steps 200 --dropout 0.5  --final_layer_social  --final_dense --enable_scheduler
@@ -36,3 +38,9 @@ python social_lstm_model.py --epochs 20 --learning_rate 0.001 --enable_mean_pool
 python train_embedding.py --loss_type 2 --embedding_type 2 --negative_sample 5
 
 python train_embedding.py --loss_type 3 --embedding_type 3 --negative_sample 5
+
+
+python social_lstm_model.py --epochs 20 --learning_rate 0.002 --enable_mean_pooling false --model 1 --warmup_steps 200 --dropout 0.2 --final_layer_social  --final_dense --enable_scheduler --include_text --embedding_self_trained --loss_type 3 --embedding_type 2
+
+
+python social_lstm_model.py --epochs 20 --learning_rate 0.002 --enable_mean_pooling false --model 7 --warmup_steps 200 --dropout 0.2 --final_layer_social  --final_dense --enable_scheduler --include_text --embedding_self_trained --loss_type 3 --embedding_type 2

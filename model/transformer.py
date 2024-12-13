@@ -77,7 +77,7 @@ class SocialTransformer(nn.Module):
 
         self.linear_layers = get_mlp(
             input_dim=input_dim,
-            hidden_dims=[512 * 64, 512 ],
+            hidden_dims=[512, 32],
             output_dim=constants.NUM_CLASSES,
             dropout=dropout_rate
         )
@@ -113,7 +113,8 @@ class SocialTransformer(nn.Module):
                 filename=format_embedding_file_name(
                     embedding_type=self.args.embedding_type,
                     negative_sample=self.args.negative_sample,
-                    hidden_feats=self.args.hidden_feats
+                    hidden_feats=self.args.hidden_feats,
+                    loss_type=self.args.loss_type,
                 )
             )
 
@@ -130,7 +131,8 @@ class SocialTransformer(nn.Module):
                 filename=format_embedding_file_name(
                     embedding_type=self.args.embedding_type,
                     negative_sample=self.args.negative_sample,
-                    hidden_feats=self.args.hidden_feats
+                    hidden_feats=self.args.hidden_feats,
+                    loss_type=self.args.loss_type,
                 )
             )
 

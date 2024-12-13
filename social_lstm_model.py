@@ -178,12 +178,13 @@ if __name__ == "__main__":
     parser.add_argument("--total_steps", type=int, default=0, help='total steps')
     parser.add_argument("--include_text", action="store_true", help='total steps')
     parser.add_argument("--warmup_steps", type=int, default=1000, help='warmup steps')
-    parser.add_argument("--embedding_self_trained", type=bool, default=False, help='Self trained embeddding')
+    parser.add_argument("--embedding_self_trained", action='store_true',  help='Self trained embeddding')
 
     ### parameters for embeddings
     parser.add_argument("--embedding_type", type=int, default=1)
     parser.add_argument("--negative_sample", type=int, default=5)
     parser.add_argument("--hidden_feats", type=int, default=128)
+    parser.add_argument("--loss_type", type=int, default=2)
    
     args = parser.parse_args()
     dropout = None if args.single_layer else args.dropout

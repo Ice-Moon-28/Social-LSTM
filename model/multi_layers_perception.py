@@ -94,6 +94,7 @@ class MultiLayerPerceptron(nn.Module):
                 filename=format_embedding_file_name(
                     embedding_type=self.args.embedding_type,
                     negative_sample=self.args.negative_sample,
+                    loss_type=self.args.loss_type,
                     hidden_feats=self.args.hidden_feats
                 )
             )
@@ -111,7 +112,8 @@ class MultiLayerPerceptron(nn.Module):
                 filename=format_embedding_file_name(
                     embedding_type=self.args.embedding_type,
                     negative_sample=self.args.negative_sample,
-                    hidden_feats=self.args.hidden_feats
+                    hidden_feats=self.args.hidden_feats,
+                    loss_type=self.args.loss_type,
                 )
             )
 

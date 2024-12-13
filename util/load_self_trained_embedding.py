@@ -2,8 +2,8 @@ import torch
 
 import constants
 
-def format_embedding_file_name(embedding_type, negative_sample, hidden_feats):
-    return "self_trained_embeddings/" + f"embedding_type_{embedding_type}_negative_sample_{negative_sample}_hidden_feats_{hidden_feats}.pt"
+def format_embedding_file_name(embedding_type, negative_sample, loss_type, hidden_feats):
+    return "self_trained_embeddings/" + f"embedding_type_{embedding_type}_negative_sample_{negative_sample}_loss_{loss_type}_hidden_feats_{hidden_feats}.pt"
 
 
 def load_embeddings(filename='embeddings.pt'):
