@@ -44,3 +44,6 @@ python social_lstm_model.py --epochs 20 --learning_rate 0.002 --enable_mean_pool
 
 
 python social_lstm_model.py --epochs 20 --learning_rate 0.002 --enable_mean_pooling false --model 1 --warmup_steps 200 --dropout 0.2 --final_layer_social  --final_dense --enable_scheduler --include_text --loss_type 3 --embedding_type 2
+
+
+python social_lstm_model.py --epochs 20 --learning_rate 0.002 --enable_mean_pooling false --model 4 --warmup_steps 200 --dropout 0.2 --final_layer_social  --final_dense --enable_scheduler --include_text --loss_type 3 --embedding_type 2

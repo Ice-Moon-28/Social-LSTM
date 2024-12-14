@@ -1,4 +1,5 @@
 
+import json
 from openai import OpenAI
 from sklearn.metrics import roc_auc_score
 
@@ -136,10 +137,17 @@ def transfrom_label_to_number(label):
         return 1
     else:
         return 2
+    
+def write_examples(examples):
+    with open("examples.txt", "w") as fp:
+        for example in examples:
+            fp.write(json.dumps(example) + "\n")
 
 def prompt_gpt(max_len=1024, choice=ModelChoices.GPT_4o_mini):
 
     examples = load_examples(max_len=max_len)
+
+    write_examples(examples)
 
     gold_labels = []
 
@@ -156,7 +164,7 @@ def prompt_gpt(max_len=1024, choice=ModelChoices.GPT_4o_mini):
 
     for example in random_examples:
         prompt = generate_classification_prompt(
-            task_description="Classify the sentiment of a given post into one of two categories: Positive or Negative. Neutral is not a valid category. When you want to predict neutral, please predict positive.",
+            task_description="Classify the sentiment of a given post into one of two categories: Positive or Negative. Neutral is not a valid category.",
             examples=[
                 examples[11],
                 examples[131],
@@ -164,6 +172,8 @@ def prompt_gpt(max_len=1024, choice=ModelChoices.GPT_4o_mini):
             ],
             input_text=example['input'],
         )
+
+        import pdb; pdb.set_trace()
 
         gold_labels.append(transfrom_label_to_number(example['output']))
 

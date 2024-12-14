@@ -1,8 +1,14 @@
 import matplotlib.pyplot as plt
 
-# 自定义 x 和 y 数据
-x = ['Random Initialization', 'One hot encoding', 'Pre-trained embedding', ]  # X 轴分类
-y = [0.60, 0.64, 0.67]  # Y 轴数值
+x = ['LSTM without embeddings', 'MLP Layers', 'Social LSTM', 'Transformer', "GPT-Prompt", "GPT-Prompt-cleaned"] 
+y = [0.66, 0.72, 0.72, 0.74, 0.6, 0.7]  
+
+x = ['Random Initialization', 'One-hot Initialization', 'Pre-trained Initialization'] 
+y = [0.60, 0.64, 0.67]  
+
+x = ['Positive-only Loss', 'Negative-only Loss', 'Negative Loss with sigmoid'] 
+y = [0.60, 0.64, 0.67]
+
 
 # 绘制直方图
 plt.figure(figsize=(8, 6))  # 设置画布大小
