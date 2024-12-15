@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
-x = ['LSTM without embeddings', 'MLP Layers', 'Social LSTM', 'Transformer', "GPT-Prompt", "GPT-Prompt-cleaned"] 
-y = [0.66, 0.72, 0.72, 0.74, 0.6, 0.7]  
+x = ['LSTM without embeddings', 'MLP Layers', 'Social LSTM', 'Transformer', "GPT-Prompt"] 
+y = [0.66, 0.72, 0.72, 0.74, 0.55]  
 
 x = ['Random Initialization', 'One-hot Initialization', 'Pre-trained Initialization'] 
 y = [0.60, 0.64, 0.67]  

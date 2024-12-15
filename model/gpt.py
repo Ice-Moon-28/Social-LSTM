@@ -9,6 +9,50 @@ from util.load_data import load_data
 import constants
 import random
 
+
+import random
+
+
+class GPTChatHelper:
+    def __init__(self, api_key, model="gpt-4o-mini", temperature=0.7):
+        self.client = OpenAI(
+            api_key=api_key
+        )
+        self.model = model
+        self.temperature = temperature
+        self.messages = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": "“Refine the following paragraph into coherent text with minimal modifications, and return the result in a JSON object."}
+        ]
+
+    def add_user_message(self, message):
+        """Add a user message to the conversation."""
+        self.messages.append({"role": "user", "content": message})
+
+    def add_assistant_message(self, message):
+        """Add an assistant message to the conversation."""
+        self.messages.append({"role": "assistant", "content": message})
+
+    def get_response(self):
+        """Send the conversation to the API and get a response."""
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=self.messages,
+            )
+            answer = response.choices[0].message.content
+            self.add_assistant_message(answer)
+            return answer
+        except Exception as e:
+            return f"An error occurred: {e}"
+
+    def reset_conversation(self):
+        """Reset the conversation history."""
+        self.messages = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": "“Refine the following paragraph into coherent text with minimal modifications, and return the result in a JSON object."}
+        ]
+
 def get_answer_from_gpt_4o_mini(prompt):
     client = OpenAI(
         api_key=""
@@ -239,6 +283,60 @@ def all_positive():
         predictions.append(
             0
         )
+
+    score = roc_auc_score(gold_labels, predictions)
+
+    print("Val AUC", score)
+
+
+def prompt_gpt_cleaned(max_len=1024, choice=ModelChoices.GPT_4o_mini):
+
+    with open('total_response.txt') as fp:
+        total_repsonses = [json.loads(line.strip()) for line in fp]
+
+    with open('total_questions.txt') as fp:
+        total_questions = [json.loads(line.strip()) for line in fp]
+
+
+    gold_labels = []
+
+    predictions = []
+
+    real_predictions = []
+
+    import pdb; pdb.set_trace()
+
+    for example in total_questions:
+        prompt = generate_classification_prompt(
+            task_description="Classify the sentiment of a given post into one of two categories: Positive or Negative. Neutral is not a valid category.",
+            examples=[
+                examples[11],
+                examples[131],
+                examples[133],
+            ],
+            input_text=example['input'],
+        )
+
+        import pdb; pdb.set_trace()
+
+        gold_labels.append(transfrom_label_to_number(example['output']))
+
+        if choice == ModelChoices.GPT_4o_mini:
+            content = get_answer_from_gpt_4o_mini(prompt).choices[0].message.content
+        elif choice == ModelChoices.GPT_4o:
+            content = get_answer_from_gpt_4o(prompt).choices[0].message.content
+
+        predictions.append(
+            transfrom_label_to_number(
+                content,
+            )
+        )
+
+        real_predictions.append(
+            content,
+        )
+
+    import pdb; pdb.set_trace()
 
     score = roc_auc_score(gold_labels, predictions)
 
